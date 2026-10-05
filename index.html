@@ -318,8 +318,9 @@ textarea.field.big{height:120px}
 </aside>
 <div class="modal" id="inst">
   <div class="mbox">
-    <div class="mhd"><div><h3>Instalar a extensão</h3><p>Grátis · leva 1 minuto · só precisa fazer uma vez neste navegador</p></div><button class="icobtn" id="instClose">✕</button></div>
+    <div class="mhd"><div><h3 id="instTitle">Instalar a extensão</h3><p>Grátis · leva 1 minuto · só precisa fazer uma vez neste navegador</p></div><button class="icobtn" id="instClose">✕</button></div>
     <div class="ist">
+      <div class="st" id="instUpd" style="display:none;border-color:var(--acc)"><span class="n">!</span><div><b>Atualizando?</b><small>Baixe e extraia por cima da pasta <code>extensao</code> antiga (substituir arquivos). Depois, em <code>chrome://extensions</code>, clique no botão <b>↻ recarregar</b> da extensão LuzSollar e recarregue este site.</small></div></div>
       <div class="st" id="st1"><span class="n">1</span><div><b>Baixe a extensão</b><small>Depois clique com o botão direito no arquivo → <b>Extrair tudo</b>.</small><a class="btn pri" id="instDl" href="extensao.zip" download="luzsollar-extensao.zip">Baixar extensão</a></div></div>
       <div class="st" id="st2"><span class="n">2</span><div><b>Abra a página de extensões</b><small>Clique em copiar, cole na barra de endereço e tecle Enter.</small><button class="btn" id="instCopy">Copiar <span class="mono" id="extUrl">chrome://extensions</span></button></div></div>
       <div class="st"><span class="n">3</span><div><b>Ligue o “Modo do desenvolvedor”</b><small>Chave no canto superior direito da página de extensões.</small></div></div>
@@ -333,6 +334,7 @@ textarea.field.big{height:120px}
 <script>
 (() => {
 'use strict';
+const EXT_LATEST = '1.2.0';
 const SHEET_ID = '1fRqUo8vH4awjCwV12U0fhR2bdBSRGFUVMlU8PozUsoQ';
 const SHEET_GID = '1556491081';
 const SHEET_NAME = 'estoque sistema';
@@ -468,7 +470,7 @@ function extSearch(plat, query) {
   const id = Math.random().toString(36).slice(2);
   return new Promise(res => {
     extWait.set(id, res);
-    window.postMessage({ src: 'LSM_PAGE', type: 'search', job: { id, plat, url: PLATS[plat].url(query), limit: +cfg.limit, visible: cfg.vis, keepOpen: cfg.keep, timeout: 40 } }, '*');
+    window.postMessage({ src: 'LSM_PAGE', type: 'search', job: { id, plat, url: PLATS[plat].url(query), limit: +cfg.limit, visible: cfg.vis, keepOpen: cfg.keep, timeout: 45 } }, '*');
   });
 }
 window.postMessage({ src: 'LSM_PAGE', type: 'ping' }, '*');
@@ -638,7 +640,7 @@ async function searchRow(r) {
       const items = enrich((m.items || []).map(x => ({ ...x, preco: brl(x.preco) })).filter(x => x.preco), 'ext');
       results[p] = results[p] || { items: [], error: null };
       results[p].items.push(...items);
-      if (!items.length) results[p].error = m.note === 'login' ? 'Pediu login/verificação — entre na conta no Chrome' : (m.error || null);
+      if (!items.length) results[p].error = m.note === 'login' ? 'Pediu login/verificação — entre na conta no Chrome' : (m.note && m.note.startsWith('diag:')) ? 'Nada lido na página (' + m.note.slice(5) + ')' : (m.error || null);
       r.res[p] = { status: mode === 'both' ? 'run' : 'ok', src: 'ext', items: results[p].items, error: results[p].error };
       render();
     })));
@@ -750,8 +752,12 @@ async function exportXls() {
 function updChips() {
   $('#dotExt').className = 'dot ' + (extOn ? 'on' : 'off');
   $('#txtExt').textContent = extOn ? 'Extensão v' + extVer : 'Extensão off';
-  $('#btnInstall').hidden = extOn;
-  if (extOn && $('#inst').classList.contains('show')) instDone();
+  const old = extOn && extVer !== EXT_LATEST;
+  $('#btnInstall').hidden = extOn && !old;
+  $('#btnInstall').lastChild.textContent = old ? 'Atualizar extensão' : 'Instalar extensão';
+  $('#instTitle').textContent = old ? `Atualizar a extensão (v${extVer} → v${EXT_LATEST})` : 'Instalar a extensão';
+  $('#instUpd').style.display = old ? '' : 'none';
+  if (extOn && !old && $('#inst').classList.contains('show')) instDone();
   $('#dotGem').className = 'dot ' + (cfg.key ? 'on' : 'off');
   $('#txtGem').textContent = cfg.key ? 'Gemini' : 'Gemini sem chave';
   document.querySelectorAll('#mode button').forEach(b => b.classList.toggle('on', b.dataset.m === cfg.mode));
@@ -878,7 +884,7 @@ function openInst() {
   $('#inst').classList.add('show');
   const st = $('#instSt');
   if (!isChromium) { st.className = 'mst bad'; st.innerHTML = 'Este navegador não aceita a extensão. Use Chrome, Edge, Brave ou Opera.'; return; }
-  if (extOn) return instDone();
+  if (extOn && extVer === EXT_LATEST) return instDone();
   st.className = 'mst'; st.innerHTML = '<span class="spin"></span><span>Aguardando a instalação… esta tela atualiza sozinha.</span>';
   clearInterval(instPoll);
   instPoll = setInterval(() => window.postMessage({ src: 'LSM_PAGE', type: 'ping' }, '*'), 1500);

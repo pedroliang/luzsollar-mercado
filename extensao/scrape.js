@@ -16,25 +16,29 @@
   }
 
   // ---------- Mercado Livre ----------
-  function scrapeML() {
+  const txt = (el) => el ? (el.innerText || el.textContent || '') : '';
+  function scrapeML(root) {
     const out = [];
-    const cards = document.querySelectorAll('li.ui-search-layout__item, .poly-card, .ui-search-result__wrapper');
+    let cards = root.querySelectorAll('.poly-card');
+    if (!cards.length) cards = root.querySelectorAll('li.ui-search-layout__item, .ui-search-result__wrapper');
     cards.forEach((c) => {
       const a = c.querySelector('a.poly-component__title, h3 a, a.ui-search-link, a[href*="MLB"]');
       if (!a) return;
-      const titulo = clean(a.textContent) || clean(c.querySelector('img')?.alt);
+      const titulo = (clean(a.textContent) || clean(c.querySelector('img')?.getAttribute('alt'))).replace(/\s*Imagem\s*-\s*\d+\/\d+\s*$/i, '').trim();
       let preco = null;
       const cur = c.querySelector('.poly-price__current .andes-money-amount, .ui-search-price__second-line .andes-money-amount');
-      const pick = cur || [...c.querySelectorAll('.andes-money-amount')].find((el) => !el.closest('s') && !el.className.includes('previous'));
+      const pick = cur || [...c.querySelectorAll('.andes-money-amount')].find((el) => !el.closest('s') && !String(el.className).includes('previous'));
       if (pick) {
         const frac = pick.querySelector('.andes-money-amount__fraction')?.textContent || '';
         const cents = pick.querySelector('.andes-money-amount__cents')?.textContent || '';
         preco = parseFloat(frac.replace(/\./g, '') + (cents ? '.' + cents : ''));
       }
-      if (!preco) preco = parseBRL(c.innerText);
+      if (!preco) preco = parseBRL(txt(c));
       const vendedor = clean(c.querySelector('.poly-component__seller, .ui-search-official-store-label')?.textContent).replace(/^Por\s+/i, '');
-      const full = !!c.querySelector('[aria-label*="FULL" i], .poly-component__shipped-from svg');
-      out.push({ titulo, preco, url: a.href.split('#')[0], vendedor, extra: full ? 'FULL' : '' });
+      const vend = (txt(c).match(/\+?([\d.,]+\s*(?:mil)?)\s*vendid/i) || [])[1] || '';
+      let url = a.getAttribute('href') || '';
+      try { url = new URL(url, location.href).href; } catch {}
+      out.push({ titulo, preco, url: url.split('#')[0], vendedor, extra: vend ? '+' + clean(vend) + ' vendidos' : '' });
     });
     return out;
   }
@@ -72,7 +76,7 @@
   const tiktokLink = (h) => /tiktok\.com\/.*(\/pdp\/|\/product\/|\/view\/product\/)/.test(h);
 
   function scrape() {
-    if (PLAT === 'ml') return scrapeML();
+    if (PLAT === 'ml') return scrapeML(document);
     if (PLAT === 'shopee') return scrapeGeneric(shopeeLink);
     return scrapeGeneric(tiktokLink);
   }
@@ -82,23 +86,38 @@
     return /registration|login|captcha|verify|suspicious|account-verification/i.test(u);
   }
 
+  function dedupe(list) {
+    const seen = new Set();
+    return list.filter((x) => {
+      if (!x.titulo || !x.preco) return false;
+      const k = x.titulo.toLowerCase() + '|' + x.preco;
+      if (seen.has(k)) return false;
+      seen.add(k); return true;
+    });
+  }
+  const send = (items, note) => chrome.runtime.sendMessage({ type: 'scraped', items, note: note || null });
+  const diag = () => `aba ${document.visibilityState}, ${document.querySelectorAll('.poly-card, li.ui-search-layout__item, a[href]').length} elementos, "${document.title.slice(0, 40)}"`;
+
   async function run(job) {
     const want = job.limit || 10;
-    let items = [];
     const t0 = Date.now();
-    while (Date.now() - t0 < (job.timeout || 35) * 1000 - 4000) {
-      if (blocked()) {
-        chrome.runtime.sendMessage({ type: 'scraped', items: [], note: 'login' });
-        return;
-      }
+    const deadline = (job.timeout || 45) * 1000 - 4000;
+    let items = [], askedVis = false;
+    while (Date.now() - t0 < deadline) {
+      if (blocked()) return send([], 'login');
       window.scrollBy(0, Math.max(600, innerHeight * 0.9));
-      await sleep(900);
-      items = scrape().filter((x) => x.titulo && x.preco);
+      await sleep(800);
+      items = dedupe(scrape());
       if (items.length >= want) break;
-      if (items.length && Date.now() - t0 > 12000) break;
+      if (items.length && Date.now() - t0 > 8000) break;
+      // ainda vazio e aba escondida: pede para mostrar a aba
+      if (!items.length && !askedVis && document.visibilityState !== 'visible' && Date.now() - t0 > 2500) {
+        askedVis = true;
+        chrome.runtime.sendMessage({ type: 'needVisible' });
+      }
     }
     window.scrollTo(0, 0);
-    chrome.runtime.sendMessage({ type: 'scraped', items: items.slice(0, want) });
+    send(items.slice(0, want), items.length ? null : 'diag:' + diag());
   }
 
   chrome.runtime.sendMessage({ type: 'whoami' }, (res) => {
