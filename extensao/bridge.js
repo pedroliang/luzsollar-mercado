@@ -1,5 +1,6 @@
 // Ponte entre o site (página) e a extensão.
 (() => {
+  if (window.__lsmBridge) return; window.__lsmBridge = true;
   const VERSION = chrome.runtime.getManifest().version;
   const announce = () => window.postMessage({ src: 'LSM_EXT', type: 'hello', version: VERSION }, '*');
   window.addEventListener('message', (ev) => {

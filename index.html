@@ -180,6 +180,28 @@ textarea.field.big{height:120px}
 .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--card2);border:1px solid var(--line2);padding:11px 16px;border-radius:12px;font-weight:600;font-size:13px;opacity:0;pointer-events:none;transition:.25s;z-index:60;box-shadow:0 20px 50px -20px rgba(0,0,0,.7)}
 .toast.show{opacity:1;transform:translateX(-50%)}
 
+
+.instbtn{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border-radius:999px;border:0;background:linear-gradient(180deg,#fde047,#facc15);color:#1a1400;font-size:12px;font-weight:800;cursor:pointer;box-shadow:0 6px 18px -8px rgba(250,204,21,.9);animation:pulse 2.4s ease-in-out infinite}
+.instbtn[hidden]{display:none}
+@keyframes pulse{0%,100%{box-shadow:0 6px 18px -8px rgba(250,204,21,.9)}50%{box-shadow:0 0 0 6px rgba(250,204,21,.15),0 6px 18px -8px rgba(250,204,21,.9)}}
+.modal{position:fixed;inset:0;z-index:70;display:none;place-items:center;padding:16px;background:rgba(0,0,0,.55);backdrop-filter:blur(4px)}
+.modal.show{display:grid}
+.mbox{width:min(560px,100%);max-height:92vh;overflow:auto;background:var(--card);border:1px solid var(--line2);border-radius:18px;box-shadow:0 30px 80px -30px rgba(0,0,0,.8)}
+.mhd{padding:20px 22px 6px;display:flex;align-items:flex-start;gap:12px}
+.mhd h3{font-size:18px;letter-spacing:-.01em}
+.mhd p{color:var(--tx3);font-size:13px;margin-top:2px}
+.mhd .icobtn{margin-left:auto;flex:none}
+.ist{padding:10px 22px 4px;display:flex;flex-direction:column;gap:10px}
+.st{display:flex;gap:12px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--bg2)}
+.st .n{flex:none;width:26px;height:26px;border-radius:8px;background:var(--accbg);color:var(--acc);font-weight:800;font-size:13px;display:grid;place-items:center}
+.st.done .n{background:var(--okbg);color:var(--ok)}
+.st>div>b{display:block;font-size:13.5px}
+.st small{display:block;color:var(--tx3);font-size:12.5px;margin-top:2px}
+.st .btn{margin-top:9px;padding:8px 13px;font-size:13px}
+.st code{font-family:"JetBrains Mono",monospace;font-size:12px;background:var(--card);border:1px solid var(--line);padding:1px 6px;border-radius:6px;color:var(--tx)}
+.mst{margin:12px 22px 20px;padding:12px 14px;border-radius:12px;display:flex;align-items:center;gap:10px;font-weight:650;font-size:13px;background:var(--accbg);color:var(--tx)}
+.mst.ok{background:var(--okbg);color:var(--ok)}
+.mst.bad{background:var(--badbg);color:var(--bad)}
 @media (max-width:1100px){
   .search{grid-template-columns:1fr}
   .side{min-width:0}
@@ -202,6 +224,7 @@ textarea.field.big{height:120px}
       <div><b>LuzSollar Mercado</b><small>Pesquisa de preços · Mercado Livre · Shopee · TikTok Shop</small></div>
     </div>
     <div class="chips">
+      <button class="instbtn" id="btnInstall" hidden><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>Instalar extensão</button>
       <span class="chip" id="chipSheet" title="Atualizar planilha"><span class="dot" id="dotSheet"></span><span id="txtSheet">Planilha…</span></span>
       <span class="chip" id="chipExt"><span class="dot" id="dotExt"></span><span id="txtExt">Extensão</span></span>
       <span class="chip" id="chipGem"><span class="dot" id="dotGem"></span><span id="txtGem">Gemini</span></span>
@@ -282,14 +305,9 @@ textarea.field.big{height:120px}
     <label class="ck"><input type="checkbox" id="cVis"> <span>Abrir as abas de pesquisa visíveis (use se a Shopee/TikTok vierem vazias)</span></label>
     <label class="ck"><input type="checkbox" id="cKeep"> <span>Não fechar as abas depois de coletar (para conferir)</span></label>
     <div class="fg">
-      <label>Instalar a extensão (uma vez)</label>
-      <ol class="steps">
-        <li>Baixe <a href="extensao.zip" style="color:var(--acc);text-decoration:underline">extensao.zip</a> e descompacte.</li>
-        <li>No Chrome abra <code>chrome://extensions</code> e ligue o <b>Modo do desenvolvedor</b>.</li>
-        <li>Clique <b>Carregar sem compactação</b> e escolha a pasta <code>extensao</code>.</li>
-        <li>Recarregue esta página. O chip “Extensão” fica verde.</li>
-        <li>Deixe-se logado na Shopee e TikTok no Chrome para melhores resultados.</li>
-      </ol>
+      <label>Extensão do Chrome (grátis)</label>
+      <button class="btn pri" id="btnInstall2" style="margin-top:4px">Instalar extensão</button>
+      <p>Coleta os preços ao vivo no seu navegador. Deixe-se logado na Shopee e TikTok.</p>
     </div>
     <div class="fg">
       <label>Planilha</label>
@@ -298,6 +316,18 @@ textarea.field.big{height:120px}
     </div>
   </div>
 </aside>
+<div class="modal" id="inst">
+  <div class="mbox">
+    <div class="mhd"><div><h3>Instalar a extensão</h3><p>Grátis · leva 1 minuto · só precisa fazer uma vez neste navegador</p></div><button class="icobtn" id="instClose">✕</button></div>
+    <div class="ist">
+      <div class="st" id="st1"><span class="n">1</span><div><b>Baixe a extensão</b><small>Depois clique com o botão direito no arquivo → <b>Extrair tudo</b>.</small><a class="btn pri" id="instDl" href="extensao.zip" download="luzsollar-extensao.zip">Baixar extensão</a></div></div>
+      <div class="st" id="st2"><span class="n">2</span><div><b>Abra a página de extensões</b><small>Clique em copiar, cole na barra de endereço e tecle Enter.</small><button class="btn" id="instCopy">Copiar <span class="mono" id="extUrl">chrome://extensions</span></button></div></div>
+      <div class="st"><span class="n">3</span><div><b>Ligue o “Modo do desenvolvedor”</b><small>Chave no canto superior direito da página de extensões.</small></div></div>
+      <div class="st"><span class="n">4</span><div><b>Clique em “Carregar sem compactação”</b><small>Escolha a pasta <code>extensao</code> que foi extraída. Pronto!</small></div></div>
+    </div>
+    <div class="mst" id="instSt"><span class="spin"></span><span>Aguardando a instalação… esta tela atualiza sozinha.</span></div>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -593,8 +623,8 @@ function effMode() {
 async function searchRow(r) {
   const plats = [...cfg.plats];
   const mode = effMode();
-  if ((mode === 'gemini' || mode === 'both') && !cfg.key) { openCfg(); toast('Cole sua chave Gemini para pesquisar sem a extensão'); throw new Error('nokey'); }
-  if ((mode === 'ext') && !extOn) { openCfg(); toast('Extensão não detectada — veja como instalar'); throw new Error('noext'); }
+  if ((mode === 'gemini' || mode === 'both') && !cfg.key) { if (cfg.mode === 'auto') openInst(); else { openCfg(); toast('Cole sua chave Gemini para pesquisar sem a extensão'); } throw new Error('nokey'); }
+  if ((mode === 'ext') && !extOn) { openInst(); throw new Error('noext'); }
   plats.forEach(p => r.res[p] = { status: 'run', items: [] });
   render();
   const results = {};
@@ -716,6 +746,8 @@ async function exportXls() {
 function updChips() {
   $('#dotExt').className = 'dot ' + (extOn ? 'on' : 'off');
   $('#txtExt').textContent = extOn ? 'Extensão v' + extVer : 'Extensão off';
+  $('#btnInstall').hidden = extOn;
+  if (extOn && $('#inst').classList.contains('show')) instDone();
   $('#dotGem').className = 'dot ' + (cfg.key ? 'on' : 'off');
   $('#txtGem').textContent = cfg.key ? 'Gemini' : 'Gemini sem chave';
   document.querySelectorAll('#mode button').forEach(b => b.classList.toggle('on', b.dataset.m === cfg.mode));
@@ -811,7 +843,7 @@ $('#list').addEventListener('change', e => {
 
 // configurações
 $('#btnCfg').onclick = openCfg; $('#btnClose').onclick = closeCfg; $('#ov').onclick = closeCfg;
-$('#chipExt').onclick = openCfg; $('#chipGem').onclick = openCfg; $('#chipSheet').onclick = () => loadSheet(true);
+$('#chipExt').onclick = () => extOn ? openCfg() : openInst(); $('#chipGem').onclick = openCfg; $('#chipSheet').onclick = () => loadSheet(true);
 $('#btnReload').onclick = () => loadSheet(true);
 const bindCfg = (id, key, prop = 'value', tf = v => v) => { const el = $(id); el[prop] = cfg[key]; el.addEventListener('change', () => { cfg[key] = tf(el[prop]); save(); updChips(); }); };
 bindCfg('#cKey', 'key', 'value', v => v.trim());
@@ -820,7 +852,40 @@ bindCfg('#cLimit', 'limit', 'value', v => +v);
 bindCfg('#cPar', 'par', 'value', v => +v);
 bindCfg('#cVis', 'vis', 'checked');
 bindCfg('#cKeep', 'keep', 'checked');
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeCfg(); if (e.key === '/' && document.activeElement === document.body) { e.preventDefault(); q.focus(); } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeCfg(); closeInst(); } if (e.key === '/' && document.activeElement === document.body) { e.preventDefault(); q.focus(); } });
+
+
+// instalação da extensão
+const isEdge = /Edg\//.test(navigator.userAgent);
+const isChromium = !!window.chrome || /Chrome|Chromium|Edg\//.test(navigator.userAgent);
+const extPage = isEdge ? 'edge://extensions' : /OPR\//.test(navigator.userAgent) ? 'opera://extensions' : 'chrome://extensions';
+$('#extUrl').textContent = extPage;
+let instPoll = null;
+function openInst() {
+  closeCfg();
+  $('#inst').classList.add('show');
+  const st = $('#instSt');
+  if (!isChromium) { st.className = 'mst bad'; st.innerHTML = 'Este navegador não aceita a extensão. Use Chrome, Edge, Brave ou Opera.'; return; }
+  if (extOn) return instDone();
+  st.className = 'mst'; st.innerHTML = '<span class="spin"></span><span>Aguardando a instalação… esta tela atualiza sozinha.</span>';
+  clearInterval(instPoll);
+  instPoll = setInterval(() => window.postMessage({ src: 'LSM_PAGE', type: 'ping' }, '*'), 1500);
+}
+function instDone() {
+  clearInterval(instPoll);
+  const st = $('#instSt'); st.className = 'mst ok';
+  st.innerHTML = '✓ Extensão conectada! Já pode pesquisar.';
+  setTimeout(() => $('#inst').classList.remove('show'), 1800);
+}
+function closeInst() { clearInterval(instPoll); $('#inst').classList.remove('show'); }
+$('#btnInstall').onclick = openInst; $('#btnInstall2').onclick = openInst;
+$('#instClose').onclick = closeInst;
+$('#inst').addEventListener('click', e => { if (e.target.id === 'inst') closeInst(); });
+$('#instDl').addEventListener('click', () => $('#st1').classList.add('done'));
+$('#instCopy').onclick = async () => {
+  try { await navigator.clipboard.writeText(extPage); } catch { const t = document.createElement('textarea'); t.value = extPage; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); }
+  $('#st2').classList.add('done'); toast('Copiado! Cole na barra de endereço');
+};
 
 // início
 rows.forEach(r => Object.values(r.res || {}).forEach(x => { if (x.status === 'run') x.status = 'ok'; }));

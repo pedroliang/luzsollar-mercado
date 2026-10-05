@@ -38,3 +38,9 @@ async function runJob(job) {
 chrome.tabs.onRemoved.addListener((tabId) => {
   if (pending.has(tabId)) finish(tabId, { ok: false, items: [], error: 'Aba fechada antes de terminar.' });
 });
+
+// Ao instalar/atualizar, conecta nas abas do site já abertas (sem precisar recarregar).
+chrome.runtime.onInstalled.addListener(async () => {
+  const tabs = await chrome.tabs.query({ url: ['https://pedroliang.github.io/*', 'http://localhost/*', 'http://127.0.0.1/*'] });
+  for (const t of tabs) chrome.scripting.executeScript({ target: { tabId: t.id }, files: ['bridge.js'] }).catch(() => {});
+});

@@ -1,13 +1,14 @@
 {
   "manifest_version": 3,
   "name": "LuzSollar Mercado - Coletor",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Coleta preços de anúncios do Mercado Livre, Shopee e TikTok Shop para o site LuzSollar Mercado.",
   "permissions": ["tabs", "scripting", "storage"],
   "host_permissions": [
     "https://*.mercadolivre.com.br/*",
     "https://shopee.com.br/*",
-    "https://*.tiktok.com/*"
+    "https://*.tiktok.com/*",
+    "https://pedroliang.github.io/*"
   ],
   "background": { "service_worker": "background.js" },
   "content_scripts": [
