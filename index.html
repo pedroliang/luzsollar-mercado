@@ -271,7 +271,7 @@ textarea.field.big{height:120px}
   </section>
 
   <div class="tools">
-    <input class="filter" id="filter" placeholder="Filtrar lista…">
+    <input class="filter" id="filter" type="search" name="lsm-filtro-lista" autocomplete="off" readonly placeholder="Filtrar lista…">
     <div class="grow"></div>
     <button class="btn" id="btnStop" style="display:none">Parar</button>
     <button class="btn" id="btnClear">Limpar lista</button>
@@ -522,21 +522,25 @@ function summary(res) {
 
 /* ---------- lista ---------- */
 function addSkus(list) {
-  let add = 0, miss = 0;
+  let add = 0, miss = 0; const added = [];
   for (let s of list) {
     s = String(s).trim(); if (!s) continue;
     if (rows.some(r => r.sku.toUpperCase() === s.toUpperCase())) continue;
     const c = catalog.get(s.toUpperCase());
     if (!c) miss++;
     rows.push({ sku: c ? c.sku : s, desc: c ? c.desc : '', nosso: c ? c.preco : null, estoque: c ? c.estoque : null, query: c ? cleanQuery(c.desc) : s, res: {} });
-    add++;
+    add++; added.push(rows[rows.length - 1]);
   }
+  $('#filter').value = '';
   save(); render();
-  toast(`${add} SKU(s) adicionados` + (miss ? ` · ${miss} não encontrados na planilha (edite a busca)` : ''));
+  toast(add ? `${add} SKU(s) adicionados` + (miss ? ` · ${miss} não encontrados na planilha (edite a busca)` : '') : 'Esse SKU já está na lista');
+  return added;
 }
 function addFree(text) {
   rows.push({ sku: '—' + (rows.length + 1), desc: text, nosso: null, estoque: null, query: text, res: {}, free: true });
+  $('#filter').value = '';
   save(); render();
+  return [rows[rows.length - 1]];
 }
 
 function platCell(r, p) {
@@ -596,7 +600,7 @@ function render() {
         <div class="det ${open.has(r.sku) ? 'show' : ''}">${open.has(r.sku) ? detail(r, plats) : ''}</div>
       </div>`;
     }).join('');
-    list.innerHTML = head + body;
+    list.innerHTML = head + (body || `<div class="blank"><b>Nenhum item com o filtro “${esc($('#filter').value)}”</b><button class="btn" id="clrFilter" style="margin-top:10px">Limpar filtro</button></div>`);
   }
   stats();
 }
@@ -666,8 +670,8 @@ const extQueue = queue(() => +cfg.par);
 const gemQueue = queue(() => 2);
 
 async function runAll(only) {
-  if (running) return;
-  const list = only != null ? [rows[only]] : rows.filter(r => cfg.plats.some(p => !r.res[p] || r.res[p].status !== 'ok' || !r.res[p].items.length));
+  if (running) { if (only != null) toast('Aguarde a pesquisa atual terminar'); return; }
+  const list = Array.isArray(only) ? only : only != null ? [rows[only]] : rows.filter(r => cfg.plats.some(p => !r.res[p] || r.res[p].status !== 'ok' || !r.res[p].items.length));
   const todo = only != null ? list : (list.length ? list : rows);
   if (!todo.length) return toast('Adicione SKUs à lista');
   running = true; stopFlag = false;
@@ -783,15 +787,18 @@ q.addEventListener('keydown', e => {
   } else if (e.key === 'Enter') {
     e.preventDefault();
     const v = q.value.trim(); if (!v) return;
-    if (sIdx >= 0) addSkus([sItems[sIdx].sku]);
-    else if (catalog.has(v.toUpperCase())) addSkus([v]);
-    else if (splitSkus(v).length > 1 && splitSkus(v).every(s => catalog.has(s.toUpperCase()))) addSkus(splitSkus(v));
-    else if (sItems.length === 1) addSkus([sItems[0].sku]);
-    else addFree(v);
+    let added;
+    if (sIdx >= 0) added = addSkus([sItems[sIdx].sku]);
+    else if (catalog.has(v.toUpperCase())) added = addSkus([v]);
+    else if (splitSkus(v).length > 1 && splitSkus(v).every(s => catalog.has(s.toUpperCase()))) added = addSkus(splitSkus(v));
+    else if (sItems.length === 1) added = addSkus([sItems[0].sku]);
+    else added = addFree(v);
+    if (!added.length) { const ex = rows.find(r => r.sku.toUpperCase() === v.toUpperCase()); if (ex) added = [ex]; }
+    if (added.length) runAll(added);
     q.value = ''; sg.classList.remove('show');
   } else if (e.key === 'Escape') sg.classList.remove('show');
 });
-sg.addEventListener('mousedown', e => { const d = e.target.closest('[data-s]'); if (!d) return; e.preventDefault(); addSkus([sItems[+d.dataset.s].sku]); q.value = ''; sg.classList.remove('show'); });
+sg.addEventListener('mousedown', e => { const d = e.target.closest('[data-s]'); if (!d) return; e.preventDefault(); const ad = addSkus([sItems[+d.dataset.s].sku]); if (ad.length) runAll(ad); q.value = ''; sg.classList.remove('show'); });
 q.addEventListener('blur', () => setTimeout(() => sg.classList.remove('show'), 150));
 
 // em massa
@@ -806,7 +813,12 @@ $('#btnRun').onclick = () => { if (splitSkus(bulk.value).length) doBulk(); runAl
 $('#btnStop').onclick = () => { stopFlag = true; toast('Parando após as pesquisas em andamento…'); };
 $('#btnClear').onclick = () => { if (!rows.length) return; if (confirm('Limpar toda a lista?')) { rows = []; open.clear(); save(); render(); } };
 $('#btnXls').onclick = () => exportXls().catch(() => toast('Falha ao gerar Excel'));
-$('#filter').addEventListener('input', render);
+const flt = $('#filter');
+flt.addEventListener('focus', () => flt.removeAttribute('readonly'));
+flt.addEventListener('input', render);
+const unAuto = () => { if (flt.value && document.activeElement !== flt) { flt.value = ''; render(); } };
+setTimeout(unAuto, 400); setTimeout(unAuto, 1500);
+$('#list').addEventListener('click', e => { if (e.target.id === 'clrFilter') { flt.value = ''; render(); } });
 
 // modo / plataformas
 $('#mode').onclick = e => { const b = e.target.closest('button'); if (!b) return; cfg.mode = b.dataset.m; save(); updChips(); };
