@@ -264,12 +264,12 @@ textarea.field.big{height:120px}
   <div class="bd">
     <div class="fg">
       <label>Chave da API Gemini</label>
-      <input id="cKey" type="password" placeholder="AIza…" autocomplete="off">
+      <input id="cKey" type="password" placeholder="Cole a chave da API" autocomplete="off">
       <p>Grátis em <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>. Fica salva só neste navegador.</p>
     </div>
     <div class="fg">
       <label>Modelo Gemini</label>
-      <input id="cModel" placeholder="gemini-2.5-flash">
+      <input id="cModel" placeholder="gemini-3.8-flash">
     </div>
     <div class="fg">
       <label>Anúncios por plataforma</label>
@@ -316,7 +316,8 @@ const store = {
   get(k, d) { try { const v = localStorage.getItem('lsm_' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
   set(k, v) { try { localStorage.setItem('lsm_' + k, JSON.stringify(v)); } catch {} }
 };
-const cfg = Object.assign({ mode: 'auto', plats: ['ml', 'shopee', 'tiktok'], key: '', model: 'gemini-2.5-flash', limit: 10, par: 3, vis: false, keep: false }, store.get('cfg', {}));
+const cfg0 = Object.assign({ mode: 'auto', plats: ['ml', 'shopee', 'tiktok'], key: '', model: 'gemini-3.8-flash', limit: 10, par: 3, vis: false, keep: false }, store.get('cfg', {}));
+const cfg = cfg0; if (/^gemini-2\.5-flash$/.test(cfg.model)) cfg.model = 'gemini-3.8-flash';
 let catalog = new Map();          // sku -> {sku, desc, preco, estoque}
 let catList = [];
 let rows = store.get('rows', []); // [{sku, desc, nosso, estoque, query, res:{plat:{items,status,src,error}}}]
@@ -452,11 +453,11 @@ Produto: "${row.query}"${row.sku ? ` (SKU interno ${row.sku})` : ''}.
 Inclua anúncios de unidade avulsa E de kits/packs (ex.: "kit 10 unidades"). Até ${cfg.limit} anúncios por plataforma, os de menor preço primeiro.
 Regras: preco = preço total do anúncio em reais (número, ex.: 39.9); qtd = quantidade de unidades no anúncio (1 se avulso); url = link direto do anúncio (mercadolivre.com.br, shopee.com.br ou tiktok.com); não invente anúncios — se não achar, deixe a lista vazia.
 Responda SOMENTE com JSON válido, sem texto extra, neste formato: {${keys}}`;
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(cfg.model || 'gemini-2.5-flash')}:generateContent?key=${encodeURIComponent(cfg.key)}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(cfg.model || 'gemini-3.8-flash')}:generateContent?key=${encodeURIComponent(cfg.key)}`;
   const body = { contents: [{ role: 'user', parts: [{ text: prompt }] }], tools: [{ google_search: {} }], generationConfig: { temperature: 0.2 } };
-  for (let attempt = 0; attempt < 4; attempt++) {
+  for (let attempt = 0; attempt < 3; attempt++) {
     const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    if (r.status === 429 || r.status === 503) { await new Promise(s => setTimeout(s, 6000 * (attempt + 1))); continue; }
+    if (r.status === 429 || r.status === 503) { await new Promise(s => setTimeout(s, 5000 * (attempt + 1))); continue; }
     const j = await r.json();
     if (!r.ok) throw new Error(j.error?.message || ('HTTP ' + r.status));
     const txt = (j.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('');
@@ -471,7 +472,7 @@ Responda SOMENTE com JSON válido, sem texto extra, neste formato: {${keys}}`;
     }
     return out;
   }
-  throw new Error('Limite de uso do Gemini atingido — tente de novo em 1 minuto');
+  throw new Error('Gemini sem cota para busca no Google — ative o faturamento no AI Studio (ou aguarde 1 min)');
 }
 
 /* ---------- análise ---------- */
@@ -814,7 +815,7 @@ $('#chipExt').onclick = openCfg; $('#chipGem').onclick = openCfg; $('#chipSheet'
 $('#btnReload').onclick = () => loadSheet(true);
 const bindCfg = (id, key, prop = 'value', tf = v => v) => { const el = $(id); el[prop] = cfg[key]; el.addEventListener('change', () => { cfg[key] = tf(el[prop]); save(); updChips(); }); };
 bindCfg('#cKey', 'key', 'value', v => v.trim());
-bindCfg('#cModel', 'model', 'value', v => v.trim() || 'gemini-2.5-flash');
+bindCfg('#cModel', 'model', 'value', v => v.trim() || 'gemini-3.8-flash');
 bindCfg('#cLimit', 'limit', 'value', v => +v);
 bindCfg('#cPar', 'par', 'value', v => +v);
 bindCfg('#cVis', 'vis', 'checked');
