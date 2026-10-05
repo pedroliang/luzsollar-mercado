@@ -876,7 +876,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeCfg()
 // instalação da extensão
 const isEdge = /Edg\//.test(navigator.userAgent);
 const isChromium = !!window.chrome || /Chrome|Chromium|Edg\//.test(navigator.userAgent);
-const extPage = isEdge ? 'edge://extensions' : /OPR\//.test(navigator.userAgent) ? 'opera://extensions' : 'chrome://extensions';
+const extPage = navigator.brave ? 'brave://extensions' : isEdge ? 'edge://extensions' : /OPR\//.test(navigator.userAgent) ? 'opera://extensions' : 'chrome://extensions';
 $('#extUrl').textContent = extPage;
 let instPoll = null;
 function openInst() {
